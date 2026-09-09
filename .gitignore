@@ -2,3 +2,11 @@
 .Rhistory
 .RData
 .Ruserdata
+*.csv
+/create-js/inputs/*.json
+/create-js/inputs/*.js
+data.js
+data.json
+category_lookup.json
+*.xlsx
+.vscode/

@@ -3809,9 +3809,9 @@ console.log("latestAggregatedData", latestAggregatedData)
       });
 
       titleEl.addEventListener('input', () => {
-        const isEditingPlaceholder = !window.areaProfileTitle;
-        const hasText = titleEl.textContent.trim() !== '';
-        if (isEditingPlaceholder && hasText) {
+        const currentText = titleEl.textContent.trim();
+        const savedTitle = window.areaProfileTitle?.trim() || '';
+        if (currentText !== '' && currentText !== savedTitle) {
           showApplyButton();
         } else {
           hideApplyButton();
@@ -3964,16 +3964,45 @@ console.log("latestAggregatedData", latestAggregatedData)
     container.innerHTML = "";
 
     const grid = document.createElement("div");
-    grid.className = "table-grid";
-
-    const wrapper = document.createElement("div");
-    wrapper.className = "table-wrapper";
+    grid.className = "table-theme-list";
 
     const entries = Object.entries(aggregatedData).filter(([key]) =>
       selectedCategories.length === 0 || selectedCategories.includes(key)
     );
 
+    const getCategoryGroupName = (category) => {
+      const categoryInput = Array.from(
+        document.querySelectorAll('#category-form input[type="checkbox"]')
+      ).find(input => input.value === category);
+      return categoryInput
+        ?.closest('.category-group')
+        ?.querySelector('.group-toggle')
+        ?.textContent.trim() || 'Other';
+    };
+
+    let currentTheme = null;
+    let themeGrid = null;
+
     entries.forEach(([category, values]) => {
+      const groupName = getCategoryGroupName(category);
+
+      if (groupName !== currentTheme) {
+        currentTheme = groupName;
+
+        const themeSection = document.createElement("section");
+        themeSection.className = "table-theme-section";
+
+        const heading = document.createElement("h2");
+        heading.className = "chart-category-heading";
+        heading.textContent = groupName;
+        themeSection.appendChild(heading);
+
+        themeGrid = document.createElement("div");
+        themeGrid.className = "table-grid";
+        themeSection.appendChild(themeGrid);
+        grid.appendChild(themeSection);
+      }
+
       const wrapper = document.createElement("div");
       wrapper.className = "table-wrapper";
       wrapper.style.background = "#fff";
@@ -4071,7 +4100,7 @@ console.log("latestAggregatedData", latestAggregatedData)
 
       table.appendChild(tbody);
       wrapper.appendChild(table);
-      grid.appendChild(wrapper);
+      themeGrid.appendChild(wrapper);
     });
 
     container.appendChild(grid);
@@ -4235,13 +4264,43 @@ console.log("latestAggregatedData", latestAggregatedData)
     const CHART_TOP_PADDING = 15;
     const LABEL_TO_BAR_GAP = 1;
    
+    const getCategoryGroupName = (category) => {
+      const categoryInput = Array.from(
+        document.querySelectorAll('#category-form input[type="checkbox"]')
+      ).find(input => input.value === category);
+      return categoryInput
+        ?.closest('.category-group')
+        ?.querySelector('.group-toggle')
+        ?.textContent.trim() || 'Other';
+    };
     const grid = document.createElement("div");
-    grid.className = "charts-grid";
+    grid.className = "chart-theme-list";
     container.appendChild(grid);
+
+    let currentTheme = null;
+    let themeGrid = null;
 
     categories.forEach(category => {
       const values = data[category];
       if (!values) return;
+      const groupName = getCategoryGroupName(category);
+
+      if (groupName !== currentTheme) {
+        currentTheme = groupName;
+
+        const themeSection = document.createElement("section");
+        themeSection.className = "chart-theme-section";
+
+        const heading = document.createElement("h2");
+        heading.className = "chart-category-heading";
+        heading.textContent = groupName;
+        themeSection.appendChild(heading);
+
+        themeGrid = document.createElement("div");
+        themeGrid.className = "charts-grid";
+        themeSection.appendChild(themeGrid);
+        grid.appendChild(themeSection);
+      }
 
       const wrapper = document.createElement("div");
       Object.assign(wrapper.style, {
@@ -4410,7 +4469,8 @@ console.log("latestAggregatedData", latestAggregatedData)
       const spacer = document.createElement("div");
       spacer.style.flex = "1";
       wrapper.appendChild(spacer);
-      grid.appendChild(wrapper);
+
+      themeGrid.appendChild(wrapper);
 
       whenVisible(wrapper, () => {
         const drawWidth = Math.max(0, wrapper.clientWidth - 32);
@@ -4626,6 +4686,17 @@ console.log("latestAggregatedData", latestAggregatedData)
 
     selectedIds.clear();
 
+    window.areaProfileTitle = undefined;
+    const titleEl = document.getElementById("areaProfileTitle");
+    if (titleEl) {
+      titleEl.textContent = "Click here to give your area a name";
+    }
+    const applyTitleBtn = document.getElementById("apply-area-name");
+    if (applyTitleBtn) {
+      applyTitleBtn.classList.remove("visible");
+      applyTitleBtn.style.display = "none";
+    }
+
     if (previewMap) {
       const { source, sourceLayer } = getZoneIdsFor(currentZoneType);
 
@@ -4761,6 +4832,138 @@ console.log("latestAggregatedData", latestAggregatedData)
         radiusKm = 2;               // update your JS variable
       }
 
+  });
+
+  // Export current selections (zone type + selected ids) as a JSON file
+  document.getElementById('export-selections-btn')?.addEventListener('click', async function (e) {
+    e.preventDefault();
+
+    const payload = {
+      zoneType: currentZoneType,
+      selectedIds: Array.from(selectedIds),
+      areaProfileTitle: window.areaProfileTitle || null
+    };
+
+    const now = new Date();
+    const datePart = now.toLocaleDateString('en-GB').replace(/\//g, '-');
+    const timePart = now.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).replace(/:/g, '-');
+    const filename = `custom-area-selections ${datePart} ${timePart}.json`;
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    await saveBlobWithPicker(blob, filename);
+  });
+
+  // Import previously exported selections (zone type + selected ids) from a JSON file
+  document.getElementById('import-selections-input')?.addEventListener('change', function (e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const payload = JSON.parse(reader.result);
+        const zoneType = payload?.zoneType;
+        const ids = Array.isArray(payload?.selectedIds) ? payload.selectedIds : [];
+
+        if (!zoneType || !ids.length) throw new Error('Invalid selections file');
+
+        // Switch to the imported zone type (this also clears any existing selection)
+        const zoneSelectorEl = document.getElementById('zone-selector');
+        if (zoneSelectorEl && zoneSelectorEl.value !== zoneType) {
+          zoneSelectorEl.value = zoneType;
+          zoneSelectorEl.dispatchEvent(new Event('change'));
+        } else {
+          clearSelections();
+        }
+
+        currentZoneType = zoneType;
+
+        const source =
+          zoneType === 'dz' ? 'dz2021' :
+            zoneType === 'dea' ? 'dea2014' :
+              zoneType === 'lgd' ? 'lgd2014' :
+                'sdz2021';
+
+        const sourceLayer =
+          zoneType === 'dz' ? 'DZ2021_clipped' :
+            zoneType === 'dea' ? 'DEA2014_clipped' :
+              zoneType === 'lgd' ? 'LGD2014_clipped' :
+                'SDZ2021_clipped';
+
+        // Applying the imported selection to the map. When the zone type just changed,
+        // the newly-visible vector tile source may not have finished loading tiles for
+        // the current viewport yet, so querySourceFeatures can briefly return only some
+        // (or none) of the needed features. Retry across animation frames until every
+        // id is found, or give up after a fixed number of attempts.
+        function applyImportedIds(attempt = 0) {
+          const features = map.querySourceFeatures(source, { sourceLayer });
+          let appliedCount = 0;
+
+          ids.forEach(id => {
+            const feature = zoneType === 'lgd'
+              ? features.find(f =>
+                f.properties.LGDNAME === id ||
+                f.properties.LGD2014NAME === id ||
+                f.properties.lgd_name === id)
+              : features.find(f => String(f.id) === String(id));
+
+            if (!feature) return;
+
+            appliedCount++;
+            selectedIds.add(id);
+            if (zoneType === 'lgd') lgdNameToId.set(id, feature.id);
+
+            map.setFeatureState({ source, sourceLayer, id: feature.id }, { hovered: true });
+          });
+
+          if (appliedCount < ids.length && attempt < 30) {
+            requestAnimationFrame(() => applyImportedIds(attempt + 1));
+            return;
+          }
+
+          if (appliedCount < ids.length) {
+            console.warn(`Imported selections: only ${appliedCount} of ${ids.length} features found`);
+          }
+
+          let selectedTab = document.querySelector('.view-tab.selected');
+          if (!selectedTab) {
+            const chartsTab = document.querySelector('.view-tab[data-view="charts"]');
+            if (chartsTab) chartsTab.classList.add('selected');
+          }
+
+          document.getElementById('charts-container').style.display = 'flex';
+          document.getElementById('tables-container').style.display = 'none';
+          document.getElementById('urban-rural-comparison').style.display = 'none';
+          document.getElementById('urban-rural-charts').style.display = 'none';
+
+          // Restore the area name before rendering so it isn't reset by the selection change
+          if (payload.areaProfileTitle) {
+            window.isImportingSelections = true;
+            window.areaProfileTitle = payload.areaProfileTitle;
+            const titleEl = document.getElementById('areaProfileTitle');
+            if (titleEl) titleEl.textContent = payload.areaProfileTitle;
+          }
+
+          window.selectedIdsExcel = selectedIds;
+          updateTables(Array.from(selectedIds));
+          updateCtaEnabled();
+          updateSummaryPreview();
+          window.isImportingSelections = false;
+        }
+
+        applyImportedIds();
+      } catch (err) {
+        console.error('Failed to import selections:', err);
+        alert('Invalid selections JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   });
 
   // FUNCTION: Build and populate LGD checkboxes from current zone data
@@ -5525,13 +5728,18 @@ function downloadSummaryImage(outputFormat = 'png') {
       }
     }
   }
+  // Match the export width to the on-screen container so the charts-grid layout
+  // (column count via media queries) and chart images render at the same relative
+  // size as the screen, instead of being stretched/shrunk to a fixed 1200px canvas.
+  const exportWidth = Math.round(breakdownContainer.getBoundingClientRect().width) || 1200;
+
   const cloneWrapper = document.createElement('div');
   cloneWrapper.className = 'export-clone-root';
   cloneWrapper.style.background = '#fff';
   cloneWrapper.style.padding = '20px';
   cloneWrapper.style.fontFamily = 'sans-serif';
-  cloneWrapper.style.width = '1200px';
-  cloneWrapper.style.maxWidth = '1200px';
+  cloneWrapper.style.width = `${exportWidth}px`;
+  cloneWrapper.style.maxWidth = `${exportWidth}px`;
   cloneWrapper.style.margin = '0';
   cloneWrapper.style.position = 'absolute';
   cloneWrapper.style.left = '-10000px';
@@ -5572,14 +5780,14 @@ function downloadSummaryImage(outputFormat = 'png') {
 
 
   
-  // Force the same 2-column map layout in the export regardless of the device the
-  // download was triggered from, so mobile/laptop/desktop all produce the same image.
+  // Stack the map below the summary/population section in the export, regardless of
+  // the device the download was triggered from, so mobile/laptop/desktop match.
   if (view === 'charts' || view === 'chartComparison') {
     const summaryHeroClone = breakdownClone.querySelector('#summary-hero');
 
     if (summaryHeroClone) {
       summaryHeroClone.style.display = 'grid';
-      summaryHeroClone.style.gridTemplateColumns = '1fr 1fr';
+      summaryHeroClone.style.gridTemplateColumns = '1fr';
       summaryHeroClone.style.gap = '20px';
       summaryHeroClone.style.alignItems = 'stretch';
 
@@ -5604,7 +5812,7 @@ function downloadSummaryImage(outputFormat = 'png') {
     const summaryMapPanelClone = breakdownClone.querySelector('#summary-map-panel');
     if (summaryMapPanelClone) {
       summaryMapPanelClone.style.padding = '0';
-      summaryMapPanelClone.style.minHeight = '420px';
+      summaryMapPanelClone.style.minHeight = '250px'; // was 420
       summaryMapPanelClone.style.boxSizing = 'border-box';
       summaryMapPanelClone.style.margin = '0';
       summaryMapPanelClone.style.width = '100%';
@@ -5616,7 +5824,7 @@ function downloadSummaryImage(outputFormat = 'png') {
     if (summaryMapClone) {
       summaryMapClone.style.width = '100%';
       summaryMapClone.style.height = '100%';
-      summaryMapClone.style.minHeight = '420px';
+      summaryMapClone.style.minHeight = '250px'; // was 420
       summaryMapClone.style.maxWidth = '100%';
       summaryMapClone.style.margin = '0';
       summaryMapClone.style.boxSizing = 'border-box';
@@ -5846,10 +6054,8 @@ function downloadSummaryImage(outputFormat = 'png') {
     text.style.display = 'none';
   });
 
-  // Force an explicit fixed-pixel 50/50 split for the summary hero, measured from the
-  // actual rendered clone width. The map panel is pinned with position:absolute/right:0
-  // so it anchors to the right edge regardless of any residual left-side box-model
-  // quirks (margins/padding leaking from the live page) that were pushing it off-center.
+  // Stack the map below the summary/population section (instead of side-by-side)
+  // in the exported output, measured from the actual rendered clone width.
   if (view === 'charts' || view === 'chartComparison') {
     const summaryHeroClone = breakdownClone.querySelector('#summary-hero');
 
@@ -5865,12 +6071,16 @@ function downloadSummaryImage(outputFormat = 'png') {
 
     if (summaryHeroClone && summaryColumnClone && summaryMapPanelClone) {
 
-      // Force true 50/50 layout
+      // Stack summary above map, single column
       summaryHeroClone.style.display = 'grid';
-      summaryHeroClone.style.gridTemplateColumns = '50% 50%';
-      summaryHeroClone.style.gap = '0';
+      summaryHeroClone.style.gridTemplateColumns = '1fr';
+      summaryHeroClone.style.gap = '20px';
       summaryHeroClone.style.alignItems = 'stretch';
       summaryHeroClone.style.width = '100%';
+
+      // Ensure the map panel renders after the summary column regardless of source order
+      summaryHeroClone.appendChild(summaryColumnClone);
+      summaryHeroClone.appendChild(summaryMapPanelClone);
 
       // Left side
       summaryColumnClone.style.width = '100%';
@@ -5891,7 +6101,7 @@ function downloadSummaryImage(outputFormat = 'png') {
         el.style.overflowWrap = 'anywhere';
       });
 
-      // Right side map
+      // Map panel now spans the full width, below the summary
       summaryMapPanelClone.style.position = 'relative';
       summaryMapPanelClone.style.width = '100%';
       summaryMapPanelClone.style.maxWidth = '100%';
@@ -5920,19 +6130,26 @@ function downloadSummaryImage(outputFormat = 'png') {
     
   }
 
-
   // Wait until images are ready
   (waitForImagesToLoad ? waitForImagesToLoad(cloneWrapper) : Promise.resolve()).then(() => {
     return new Promise(resolve => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          const chartGrid = contentClone.querySelector('.charts-grid');
-          if (chartGrid) {
+          const chartThemeSections = contentClone.querySelectorAll('.chart-theme-section');
+          if (chartThemeSections.length) {
             const wrapperTop = cloneWrapper.getBoundingClientRect().top;
             const rowTops = new Set();
 
-            Array.from(chartGrid.children).forEach(chart => {
-              rowTops.add(Math.round(chart.getBoundingClientRect().top - wrapperTop));
+            chartThemeSections.forEach(section => {
+              rowTops.add(Math.round(section.getBoundingClientRect().top - wrapperTop));
+
+              const chartRowTops = Array.from(section.querySelectorAll('.charts-grid > *'))
+                .map(chart => Math.round(chart.getBoundingClientRect().top - wrapperTop));
+
+              chartRowTops
+                .filter((rowTop, index) => index === 0 || rowTop !== chartRowTops[index - 1])
+                .slice(1)
+                .forEach(rowTop => rowTops.add(rowTop));
             });
 
             chartRowStarts = Array.from(rowTops);
@@ -5995,6 +6212,31 @@ function downloadSummaryImage(outputFormat = 'png') {
         const sectionStarts = [0, ...pageStarts, finalCanvas.height];
         let pageCount = 0;
 
+        console.log({
+          sourcePageHeight,
+          pageStarts,
+          sectionStarts
+        });
+
+        for (let i = 0; i < sectionStarts.length - 1; i++) {
+          console.log(
+            `Section ${i}:`,
+            sectionStarts[i + 1] - sectionStarts[i]
+          );
+        }
+
+        console.log({
+          finalCanvasWidth: finalCanvas.width,
+          finalCanvasHeight: finalCanvas.height,
+          sourcePageHeight
+        });
+
+        console.log({
+          offsetHeight: cloneWrapper.offsetHeight,
+          canvasHeight: canvas.height,
+          canvasScale
+        });
+
         const addCanvasSlice = (sourceY, sliceHeight) => {
           const pageCanvas = document.createElement('canvas');
           pageCanvas.width = finalCanvas.width;
@@ -6041,6 +6283,7 @@ function downloadSummaryImage(outputFormat = 'png') {
         await saveBlobWithPicker(blob, 'area-summary.png');
       }
 
+      
       document.body.removeChild(cloneWrapper);
     };
   });
@@ -6329,13 +6572,14 @@ async function downloadExcel() {
 async function saveBlobWithPicker(blob, suggestedName) {
   if (window.showSaveFilePicker) {
     try {
+      const ext = suggestedName.split('.').pop();
       const options = {
         suggestedName,
         types: [
           {
-            description: 'PNG',
+            description: ext.toUpperCase(),
             accept: {
-              [blob.type]: ['.' + suggestedName.split('.').pop()]
+              [blob.type]: ['.' + ext]
             }
           }
         ]
@@ -6932,19 +7176,22 @@ function handleImportFile(file) {
   reader.readAsText(file);
 }
 
-// Wire up UI if present
-document.addEventListener('DOMContentLoaded', () => {
-  
-  const exp = document.getElementById('export-selections-btn');
-  if (exp) exp.addEventListener('click', (e) => { e.preventDefault(); exportSelections(); });
 
-  const imp = document.getElementById('import-selections-input');
-  if (imp) imp.addEventListener('change', (ev) => {
-    const f = ev.target.files && ev.target.files[0];
-    if (f) handleImportFile(f);
-    ev.target.value = '';
-  });
+// Dropdown menu styling
+const downloadBtn = document.getElementById("downloadDropdown");
+const menu = document.querySelector(".dropdown-menu");
+
+downloadBtn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    menu.classList.toggle("show");
 });
+
+document.addEventListener("click", function () {
+    menu.classList.remove("show");
+});
+
+
+
 
 (() => {
   const toggleBtn = document.getElementById('sidebar-toggle');

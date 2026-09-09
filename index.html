@@ -184,7 +184,7 @@
           <path d="M4 21H20" />
         </svg>
 
-        <span>Import selections</span>
+        <span>Import json</span>
     </label>
 
     <input
@@ -393,30 +393,12 @@
           <li><button class="dropdown-item" onclick="downloadExcel()">Your profile tables (in Excel format)</button></li>
           <li><button class="dropdown-item" onclick="downloadSummaryImage()">Your profile charts (as a PNG image)</button></li>
           <li><button class="dropdown-item" onclick="downloadSummaryPDF()">Your profile charts (as a PDF file)</button></li>
+          <li><button id="export-selections-btn"  class="dropdown-item">Map data (as json)</button></li>
         </ul>
-      </div>
-          
-          <!-- Export / Import selections -->
-          <div class="btn-group ml-2">
-            <button id="export-selections-btn" class="nav-button">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <g transform="translate(-5 0)">
-
-                    <path d="M12 3v12"></path>
-                    <path d="M7 10l5 5 5-5"></path>
-                    <path d="M4 21h16"></path>
-                                    </g>
-                </svg>
-
-                
-
-                Export selections
-            </button>
-        </div>
-        
+      </div>        
     </div>
   </div>
-
+  
     <h1 id="areaProfileTitle" contenteditable="true"></h1>
     <button id="apply-area-name" class="nav-button apply-area-name">Apply</button>
 

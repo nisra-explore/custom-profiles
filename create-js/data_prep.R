@@ -49,7 +49,7 @@ urban_rural_dz_df2 <- read.xlsx(paste0(data_source_root,"geography-data-zone-and
 
 urban_rural_df2 <- rbind(urban_rural_dz_df2, urban_rural_sdz_df2)
 
-urban_rural_dp <- c("BSDZ", "BSSDZ")
+urban_rural_dp <- c("BSDZ", "BSSDZ", "PRCDEA", "BUSINESSBIGLGD")
 
 # Importing Flexible Tables
 # Create a list of the urls from the Flexible Table Builder
@@ -106,17 +106,36 @@ urban_rural_df <- tibble(data_portal_all_tables.extension.matrix = urban_rural_d
 # joined_data <- left_join(urban_rural_df, data_labels, by = "data_portal_all_tables.extension.matrix")
 # joined_data <- joined_data %>%
 #   rename("Label" = data_portal_all_tables.label)
-joined_data <- c("Benefit Statistics", "Benefit Statistics","Benefit Statistics", "Age (MYE)","Age (MYE)", "Sex (MYE)")
+# joined_data <- c("Benefit Statistics", "Benefit Statistics","Benefit Statistics",
+#                  "Age (MYE)","Age (MYE)", "Sex (MYE)")
 
 Sys.getenv("http_proxy")
 Sys.getenv("https_proxy")
 Sys.setenv("http_proxy" = "")
 Sys.setenv("https_proxy" = "")
 
+data_portal_codes <- c("BSDZ", "BSSDZ", "BSDEA", "PRCDEA", "PRCLGD", "BUSINESSBIGLGD", "EJOBSLGD",
+                       "DESCSLGD", "DESCPDEA", "DESCPPLGD", "DESCPPDEA", "DESCSLGD", "DESCSDEA"
+                       # "MYE01T010"
+                       )
+
+column_name <- c("Benefits Statistics", "Benefits Statistics", "Benefits Statistics", "Crime classification",
+                 "Crime classification", "Number of businesses", "Employee Jobs")
+  
 url_list <- c(
   "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BSDZ/CSV/1.0/",
   "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BSSDZ/CSV/1.0/",
   "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BSDEA/CSV/1.0/",
+  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/PRCDEA/CSV/1.0/en",
+  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/PRCLGD/CSV/1.0/en",
+  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BUSINESSBIGLGD/CSV/1.0/en",
+  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/EJOBSLGD/CSV/1.0/en",
+  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCPDEA/CSV/1.0/en",
+  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCPLGD/CSV/1.0/en",
+  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCPPDEA/CSV/1.0/en",
+  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCPPLGD/CSV/1.0/en",
+  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCSLGD/CSV/1.0/en",
+  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCSDEA/CSV/1.0/en",
   "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.PxAPIv1/en/153/PMPE/MYE01T012?query=%7B%22query%22:%5B%7B%22code%22:%22broadage4%22,%22selection%22:%7B%22filter%22:%22item%22,%22values%22:%5B%221%22,%222%22,%223%22,%224%22%5D%7D%7D,%7B%22code%22:%22Sex%22,%22selection%22:%7B%22filter%22:%22item%22,%22values%22:%5B%22All%22%5D%7D%7D%5D,%22response%22:%7B%22format%22:%22csv%22,%22pivot%22:null,%22codes%22:true%7D%7D", # MYE: Age
   "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.PxAPIv1/en/153/PMPE/MYE01T010?query=%7B%22query%22:%5B%7B%22code%22:%22broadage4%22,%22selection%22:%7B%22filter%22:%22item%22,%22values%22:%5B%221%22,%222%22,%223%22,%224%22%5D%7D%7D,%7B%22code%22:%22Sex%22,%22selection%22:%7B%22filter%22:%22item%22,%22values%22:%5B%22All%22%5D%7D%7D%5D,%22response%22:%7B%22format%22:%22csv%22,%22pivot%22:null,%22codes%22:true%7D%7D",
   "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.PxAPIv1/en/153/PMPE/MYE01T012?query=%7B%22query%22:%5B%7B%22code%22:%22broadage4%22,%22selection%22:%7B%22filter%22:%22item%22,%22values%22:%5B%22All%22%5D%7D%7D,%7B%22code%22:%22Sex%22,%22selection%22:%7B%22filter%22:%22item%22,%22values%22:%5B%221%22,%222%22%5D%7D%7D%5D,%22response%22:%7B%22format%22:%22csv%22,%22pivot%22:null,%22codes%22:true%7D%7D", # MYE: Sex
@@ -128,7 +147,8 @@ list_of_urls <- c(list_of_urls, url_list)
 # Create a blank json
 final_json <- list("Super Data Zone" = list(),
                    "Data Zone" = list(),
-                   "District Electoral Area" = list())
+                   "District Electoral Area" = list(),
+                   "Local Government District" = list())
 
 dp_ni_total_list <- list()
 
@@ -174,6 +194,86 @@ for (i in 1:length(list_of_urls)) {
         rename("Statistic.Label" = "Sex.Label", "Zone" = "DEA2014")  %>%
         filter(Year == max(Year, na.rm = TRUE))
       category_name <- "Sex (MYE)"
+    } else if (dataset_url == "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/PRCDEA/CSV/1.0/en") {
+      filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Crime.classification", "Financial.year") | 
+                                  grepl("dz|sdz|dea", names(csv_data), ignore.case = TRUE)] %>%
+        rename("Year" = Financial.year, "Zone" = "DEA2014", "Statistic.Label" = "Crime.classification")  %>%
+        filter(Year == max(Year, na.rm = TRUE))
+      filtered_data <- filtered_data[!grepl("All crimes recorded by the police", 
+                                            filtered_data$Statistic.Label), ]
+      category_name <- "All crimes recorded by the police"
+    } else if (dataset_url == "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/PRCLGD/CSV/1.0/en") {
+      filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Crime.classification", "Financial.year") | 
+                                  grepl("dz|sdz|dea|lgd", names(csv_data), ignore.case = TRUE)] %>%
+        rename("Year" = Financial.year, "Zone" = "LGD2014", "Statistic.Label" = "Crime.classification")  %>%
+        filter(Year == max(Year, na.rm = TRUE))
+      filtered_data <- filtered_data[!grepl("All crimes recorded by the police", 
+                                            filtered_data$Statistic.Label), ]
+      category_name <- "All crimes recorded by the police"
+    } else if (dataset_url == "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BUSINESSBIGLGD/CSV/1.0/en") {
+      filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Broad.industry.group", "Year") | 
+                                  grepl("dz|sdz|dea|lgd", names(csv_data), ignore.case = TRUE)] %>%
+        rename("Zone" = "LGD2014", "Statistic.Label" = "Broad.industry.group")  %>%
+        filter(Year == max(Year, na.rm = TRUE))
+      filtered_data <- filtered_data[!grepl("All Industries", 
+                                            filtered_data$Statistic.Label), ]
+      category_name <- "Number of businesses"
+    } else if (dataset_url == "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/EJOBSLGD/CSV/1.0/en") {
+      filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Employee.Jobs", "Year") | 
+                                  grepl("dz|sdz|dea|lgd", names(csv_data), ignore.case = TRUE)] %>%
+        rename("Zone" = "LGD2014", "Statistic.Label" = "Employee.Jobs")  %>%
+        filter(Year == max(Year, na.rm = TRUE))
+      filtered_data <- filtered_data[!grepl("All Jobs", 
+                                            filtered_data$Statistic.Label), ]
+      category_name <- "Employee Jobs"  
+    } else if (dataset_url == "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCPDEA/CSV/1.0/en") {
+      filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Statistic.Label", "Academic.year") | 
+                                  grepl("dz|sdz|dea|lgd", names(csv_data), ignore.case = TRUE)] %>%
+        rename("Zone" = "DEA2014", "Year" = "Academic.year")  %>%
+        filter(Year == max(Year, na.rm = TRUE))
+      filtered_data <- filtered_data[grepl("Female|Male", 
+                                           filtered_data$Statistic.Label), ]
+      category_name <- "School census - primary"  
+    } else if (dataset_url == "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCPLGD/CSV/1.0/en") {
+      filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Statistic.Label", "Academic.year") | 
+                                  grepl("dz|sdz|dea|lgd", names(csv_data), ignore.case = TRUE)] %>%
+        rename("Zone" = "LGD2014", "Year" = "Academic.year")  %>%
+        filter(Year == max(Year, na.rm = TRUE))
+      filtered_data <- filtered_data[grepl("Female|Male", 
+                                           filtered_data$Statistic.Label), ]
+      category_name <- "School census - primary"  
+    } else if (dataset_url == "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCPPDEA/CSV/1.0/en") {
+      filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Statistic.Label", "Academic.year") | 
+                                  grepl("dz|sdz|dea|lgd", names(csv_data), ignore.case = TRUE)] %>%
+        rename("Zone" = "DEA2014", "Year" = "Academic.year")  %>%
+        filter(Year == max(Year, na.rm = TRUE))
+      filtered_data <- filtered_data[grepl("Female|Male", 
+                                           filtered_data$Statistic.Label), ]
+      category_name <- "School census - post-primary"  
+    } else if (dataset_url == "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCPPLGD/CSV/1.0/en") {
+      filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Statistic.Label", "Academic.year") | 
+                                  grepl("dz|sdz|dea|lgd", names(csv_data), ignore.case = TRUE)] %>%
+        rename("Zone" = "LGD2014", "Year" = "Academic.year")  %>%
+        filter(Year == max(Year, na.rm = TRUE))
+      filtered_data <- filtered_data[grepl("Female|Male", 
+                                           filtered_data$Statistic.Label), ]
+      category_name <- "School census - post-primary"  
+    } else if (dataset_url == "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCSLGD/CSV/1.0/en") {
+      filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Statistic.Label", "Academic.year") | 
+                                  grepl("dz|sdz|dea|lgd", names(csv_data), ignore.case = TRUE)] %>%
+        rename("Zone" = "LGD2014", "Year" = "Academic.year")  %>%
+        filter(Year == max(Year, na.rm = TRUE))
+      filtered_data <- filtered_data[grepl("Female|Male", 
+                                           filtered_data$Statistic.Label), ]
+      category_name <- "School census - special schools"  
+    } else if (dataset_url == "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/DESCSDEA/CSV/1.0/en") {
+      filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Statistic.Label", "Academic.year") | 
+                                  grepl("dz|sdz|dea|lgd", names(csv_data), ignore.case = TRUE)] %>%
+        rename("Zone" = "DEA2014", "Year" = "Academic.year")  %>%
+        filter(Year == max(Year, na.rm = TRUE))
+      filtered_data <- filtered_data[grepl("Female|Male", 
+                                           filtered_data$Statistic.Label), ]
+      category_name <- "School census - special schools"  
     } else {
       filtered_data <- csv_data[, names(csv_data) %in% c("VALUE", "Statistic.Label", "Year") | 
                                   grepl("dz|sdz|dea", names(csv_data), ignore.case = TRUE)] %>%
@@ -182,7 +282,7 @@ for (i in 1:length(list_of_urls)) {
       names(filtered_data)[matching_cols] <- "Zone"
       category_name <- "Benefits Statistics"
     }
-
+    
     date_df <- rbind(
       date_df,
       data.frame(Category = category_name,
@@ -193,7 +293,10 @@ for (i in 1:length(list_of_urls)) {
       filter(Zone == "N92000002") %>%
       select(Statistic.Label, VALUE)
     
-    total_dp_data$VALUE <- round((total_dp_data$VALUE / sum(total_dp_data$VALUE)) * 100, 1)
+    total_dp_data$VALUE <- round(
+      (total_dp_data$VALUE / sum(total_dp_data$VALUE, na.rm = TRUE)) * 100,
+      1
+    )
     
     dp_ni_total_list[[category_name]] <- setNames(total_dp_data[[2]], total_dp_data[[1]])
     
@@ -298,6 +401,12 @@ for (i in 1:length(list_of_urls)) {
       }
       
       final_json$`District Electoral Area`[[zone]][[category_name]] <- setNames(split_df[[zone]]$Count, split_df[[zone]][[2]])
+    } else if (substr(zone, 1, 3) == "N09") {
+      if (is.null(final_json$`Local Government District`[[zone]])) {
+        final_json$`Local Government District`[[zone]] <- list()
+      }
+      
+      final_json$`Local Government District`[[zone]][[category_name]] <- setNames(split_df[[zone]]$Count, split_df[[zone]][[2]])
     } else {
       NA
     }
@@ -328,7 +437,7 @@ for (key in names(final_json)) {
 
 final_json$Year <- setNames(date_df$Year, date_df$Category)
 
-zones <- c("Super Data Zone", "Data Zone", "District Electoral Area")
+zones <- c("Super Data Zone", "Data Zone", "District Electoral Area", "Local Government District")
 
 for (zone in zones) {
   final_json[[zone]] <- lapply(final_json[[zone]], convert_to_named_list)
@@ -404,7 +513,7 @@ for (zone in names(final_json$`Super Data Zone`)) {
   }
 }
 
-# Convert mapping into a named vector
+ # Convert mapping into a named vector
 zone_to_lgd_dz <- setNames(lgd_sdz_df_clean$LGD2014NAME, lgd_sdz_df_clean$DZ2021)
 
 # Loop through each zone in final_json
@@ -498,9 +607,15 @@ category_lookup <- data.frame(nested_list_names, further_breakdown_df)
 lookup_data <- category_lookup[, c("further_breakdown_df", "nested_list_names")]
 lookup_data$Source <- "Flexible Table Builder"
   
-data_portal_lookup <- data.frame("further_breakdown_df" = c("Benefits", "MYE01T012", "MYE01T012"),
-  "nested_list_names" = c("Benefits Statistics", "Age (MYE)", "Sex (MYE)"),
-  "Source" = c("Data Portal", "Data Portal", "Data Portal"))
+data_portal_lookup <- data.frame("further_breakdown_df" = c("BSLGDUR", "MYE01T012", "MYE01T012", "PRC", 
+                                                            "BUSINESSBIG", "EJOBS", "DESCS", "DESCP", 
+                                                            "DESCPP"),
+  "nested_list_names" = c("Benefits Statistics", "Age (MYE)", "Sex (MYE)", 
+                          "All crimes recorded by the police", "Number of businesses","Employee Jobs",
+                          "School census - special schools", "School census - primary",
+                          "School census - post-primary"),
+  "Source" = c("Data Portal", "Data Portal", "Data Portal", "Data Portal", "Data Portal", "Data Portal"
+               , "Data Portal", "Data Portal", "Data Portal"))
 
 lookup_data <- rbind(lookup_data, data_portal_lookup)
 
@@ -510,9 +625,10 @@ lookup_data <- rbind(lookup_data, data_portal_lookup)
 year_vec <- final_json[["Year"]]
 year_df <- data.frame(
   nested_list_names = names(year_vec),
-  Year = as.numeric(unname(year_vec)),
+  Year = unname(year_vec), 
   stringsAsFactors = FALSE
 )
+# Year amended to allow 2025/26 etc.
 
 # Preserve order and rows
 lookup_data <- merge(lookup_data, year_df, by = "nested_list_names", all.x = TRUE, sort = FALSE)
