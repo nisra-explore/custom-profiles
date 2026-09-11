@@ -2320,6 +2320,8 @@ padding-left: 100px
 
 #output-panel {
   min-width: 0; /* ✅ stops flex overflow bug */
+  padding-right: 1rem; /* keeps right-hand chart column off the browser edge */
+  box-sizing: border-box;
 }
 
 #tables-container,
@@ -2692,7 +2694,7 @@ td, th {
 
 @media (min-width: 1601px) {
   #breakdown-container {
-    min-width: 1467px;
+    max-width: 100%;
   }
 }
 
@@ -3110,8 +3112,24 @@ td, th {
     flex-direction: column;
     align-items: flex-end;
     gap: 6px;
-    right: 40px;
+    right: 12px; /* align with #howto-rail-btn's right edge */
     bottom: 55px;
+  }
+
+  /* Stack icon above text so each has its own line */
+  .cntrl-button-wrapper .uicon-btn.with-text {
+    flex-direction: column;
+    width: 60px;
+    padding: 6px 4px;
+    gap: 2px;
+    font-size: 11px;
+    line-height: 1.1;
+    text-align: center;
+  }
+
+  .cntrl-button-wrapper .uicon-btn.with-text svg {
+    width: 1.2em;
+    height: 1.2em;
   }
 
   #zoom-level {

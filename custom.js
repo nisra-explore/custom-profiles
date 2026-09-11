@@ -3501,35 +3501,32 @@ map.on('load', () => {
         );
         
         if (feature) {
-          // const featureId = feature.id;
-          const featureId = feature.properties.LGD_CODE || feature.properties.lgd_code;
-
-              sidSet.add(lgd);
-              lgdNameToId.set(lgd, featureId);
-              // Also mark LGD as selected so checkboxes and exports stay in sync
-              try { selectedLGDs.add(lgd); } catch (e) {}
-              try {
-                const checkboxId = `lgd-${String(lgd).replace(/\s+/g, '-').toLowerCase()}`;
-                const cb = document.getElementById(checkboxId);
-                if (cb) { cb.checked = true; const lbl = document.querySelector(`label[for="${checkboxId}"]`); if (lbl) { lbl.classList.add('selected'); lbl.setAttribute('aria-checked', 'true'); } }
-              } catch (e) {}
-              try { if (map && source && sourceLayer && typeof map.setFeatureState === 'function') map.setFeatureState({ source, sourceLayer, id: featureId }, { hovered: true }); } catch {}
+          // promoteId already puts the lgd_code on feature.id (see source setup)
+          const featureId = feature.id;
+          const lgdName =
+            feature.properties?.LGDNAME ||
             feature.properties?.LGD2014NAME ||
             feature.properties?.lgd_name;
 
-          // ✅ Store NAME for data 
+          // ✅ Store NAME for data
           if (lgdName) {
             selectedIds.add(lgdName);
           } else {
             console.warn('⚠️ LGD name not found on feature');
-            // selectedIds.add(lookupCode); 
-            selectedIds.add(feature.properties.LGDNAME);
+            selectedIds.add(String(lookupCode));
           }
 
-          // Keep mapping 
-          lgdNameToId.set(lgdName, featureId);
+          // Keep mapping
+          lgdNameToId.set(lgdName || String(lookupCode), featureId);
+          // Also mark LGD as selected so checkboxes and exports stay in sync
+          try { selectedLGDs.add(lgdName || String(lookupCode)); } catch (e) {}
+          try {
+            const checkboxId = `lgd-${String(lgdName).replace(/\s+/g, '-').toLowerCase()}`;
+            const cb = document.getElementById(checkboxId);
+            if (cb) { cb.checked = true; const lbl = document.querySelector(`label[for="${checkboxId}"]`); if (lbl) { lbl.classList.add('selected'); lbl.setAttribute('aria-checked', 'true'); } }
+          } catch (e) {}
 
-          // Highlight using feature ID 
+          // Highlight using feature ID
           map.setFeatureState(
             { source, sourceLayer, id: featureId },
             { hovered: true }
@@ -4225,11 +4222,17 @@ console.log("latestAggregatedData", latestAggregatedData)
 
   function renderAggregatedCharts(data, selectedCategories = []) {
     function whenVisible(el, cb) {
-      if (el.offsetParent !== null && el.clientWidth > 0) return cb();
+      // Wait two animation frames so the grid has finished settling into its
+      // final column count before we measure - otherwise a stale, too-wide
+      // measurement gets baked into the canvas and it never shrinks back down.
+      const measureWhenStable = () => {
+        requestAnimationFrame(() => requestAnimationFrame(cb));
+      };
+      if (el.offsetParent !== null && el.clientWidth > 0) return measureWhenStable();
       const ro = new ResizeObserver(() => {
         if (el.clientWidth > 0) {
           ro.disconnect();
-          cb();
+          measureWhenStable();
         }
       });
       ro.observe(el);
@@ -4473,7 +4476,9 @@ console.log("latestAggregatedData", latestAggregatedData)
       themeGrid.appendChild(wrapper);
 
       whenVisible(wrapper, () => {
-        const drawWidth = Math.max(0, wrapper.clientWidth - 32);
+        // Subtract wrapper padding (16px each side) plus a small safety margin so
+        // rounding/scrollbar changes never push the canvas past the card edge.
+        const drawWidth = Math.max(0, Math.floor(wrapper.clientWidth - 34));
         canvas.width = drawWidth;
         canvas.style.width = `${drawWidth}px`;
 
