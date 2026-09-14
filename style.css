@@ -3169,7 +3169,7 @@ td, th {
 @media (max-width: 450px) {
 
   .cntrl-button-wrapper {
-    bottom: 62px;
+    bottom: 100px; /* was 62px */
   }
 
   #coords {
