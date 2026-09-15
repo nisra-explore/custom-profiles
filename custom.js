@@ -6196,11 +6196,36 @@ function downloadSummaryImage(outputFormat = 'png') {
         });
       });
     });
-  }).then(canvas => {
-    const logo = new Image();
-    logo.src = 'img/nisra-only-colour.png';
+  }).then(async canvas => {
+    if (outputFormat !== 'pdf') {
+      const now = new Date();
+      const datePart = now.toLocaleDateString('en-GB').replace(/\//g, '-');
+      const timePart = now.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).replace(/:/g, '-');
+      const filename =
+        `NISRA Custom Area Profile Extract ${datePart} ${timePart}.png`;
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(result => {
+          if (result) resolve(result);
+          else reject(new Error('Could not create the PNG export.'));
+        }, 'image/png');
+      });
 
-    logo.onload = async () => {
+      await saveBlobWithPicker(blob, filename);
+      document.body.removeChild(cloneWrapper);
+      return;
+    }
+
+    const logo = new Image();
+    let exportStarted = false;
+    const exportWithLogo = async () => {
+      if (exportStarted) return;
+      exportStarted = true;
+
       const padding = 20;
       const maxLogoWidth = canvas.width * 0.25;
       const scaleFactor = Math.min(1, maxLogoWidth / logo.width);
@@ -6309,16 +6334,36 @@ function downloadSummaryImage(outputFormat = 'png') {
           }
         }
 
-        await saveBlobWithPicker(pdf.output('blob'), 'area-summary.pdf');
-      } else {
-        const dataUrl = finalCanvas.toDataURL('image/png');
-        const blob = await fetch(dataUrl).then(r => r.blob());
-        await saveBlobWithPicker(blob, 'area-summary.png');
-      }
+        const now = new Date();
+        const datePart = now.toLocaleDateString('en-GB').replace(/\//g, '-');
+        const timePart = now.toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }).replace(/:/g, '-');
 
-      
+        const baseFilename =
+          `NISRA Custom Area Profile Extract ${datePart} ${timePart}`;
+
+        if (outputFormat === 'pdf') {
+
+          await saveBlobWithPicker(pdf.output('blob'),`${baseFilename}.pdf`);
+
+        }
+
+        }
+        document.body.removeChild(cloneWrapper);
+      };
+    logo.onerror = () => {
+      if (exportStarted) return;
+      exportStarted = true;
       document.body.removeChild(cloneWrapper);
+      console.error('Could not load the export logo.');
     };
+    logo.onload = exportWithLogo;
+    logo.src = 'img/nisra-only-colour.png';
+    if (logo.complete && logo.naturalWidth > 0) exportWithLogo();
   });
 }
 
@@ -6603,7 +6648,7 @@ async function downloadExcel() {
     second: '2-digit',
     hour12: false
   }).replace(/:/g, '-');
-  const filename = `NISRA Custom Area Profile Extract-${datePart} ${timePart}.xlsx`;
+  const filename = `NISRA Custom Area Profile Extract ${datePart} ${timePart}.xlsx`;
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   await saveBlobWithPicker(blob, filename);
