@@ -811,6 +811,7 @@ document.addEventListener('DOMContentLoaded', function () {
       cb.checked = defaultCategories.includes(cb.value);
     });
 
+    if (typeof updateDownloadButtonsState === 'function') updateDownloadButtonsState();
     updateTables([]);        // reset tables/outputs
     popup.remove();
 
@@ -3286,9 +3287,15 @@ map.on('load', () => {
   let selectedCategories = ['Age (4 Categories)', 'Sex Label'];
   let currentView = 'charts';
 
+  window.chosenCategories = selectedCategories;
+  if (typeof updateDownloadButtonsState === 'function') updateDownloadButtonsState();
+
   document.getElementById("category-form").addEventListener("change", () => {
     selectedCategories = Array.from(document.querySelectorAll('#category-form input:checked'))
       .map(input => input.value);
+
+    window.chosenCategories = selectedCategories;
+    updateDownloadButtonsState();
 
     const selectedArray = Array.from(selectedIds);
     updateTables(selectedArray);
@@ -3320,6 +3327,7 @@ map.on('load', () => {
     }
 
     window.chosenCategories = selectedCategories;
+    updateDownloadButtonsState();
     updateSourceLink();
 
     updateTables(Array.from(selectedIds));
@@ -3407,6 +3415,16 @@ map.on('load', () => {
     
   });
 
+  // Excel/image/PDF exports need at least one selected table; "Map data" export does not.
+  function updateDownloadButtonsState() {
+    const hasSelection = !!(window.chosenCategories && window.chosenCategories.length);
+    ['download-excel-btn', 'download-image-btn', 'download-pdf-btn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.disabled = !hasSelection;
+    });
+  }
+  window.updateDownloadButtonsState = updateDownloadButtonsState;
+
   // Function to hide categories not present in the data
   function updateCategorySelector(availableKeys) {
     const checkboxes = document.querySelectorAll('#category-form input[type="checkbox"]');
@@ -3422,6 +3440,16 @@ map.on('load', () => {
       }
     });
 
+    // Drop categories that aren't available for this zone type (e.g. Sex for DZ/DEA)
+    // from the active selection, so exports (like Excel) don't include them.
+    // Skip this when availableKeys is empty (no zones selected yet) so the
+    // default/previous selection isn't wiped out before any data has loaded.
+    if (availableKeys.length) {
+      selectedCategories = selectedCategories.filter(cat => availableKeys.includes(cat));
+      window.chosenCategories = selectedCategories;
+    }
+
+    updateDownloadButtonsState();
     markEmptyCategoryGroups();
   }
 
@@ -6414,7 +6442,13 @@ async function downloadExcel() {
   
 
   // CATEGORY SHEETS
-  const categories = selectedCategories.length ? selectedCategories : Object.keys(aggregated);
+  // Only export categories that were actually selected AND have data for the current zone type -
+  // some categories (e.g. Sex) aren't available for every zone type (LGD/DEA/Data Zone).
+  const categoryPool = selectedCategories.length ? selectedCategories : Object.keys(aggregated);
+  const categories = categoryPool.filter(category => {
+    const values = aggregated[category];
+    return values && Object.keys(values).length > 0;
+  });
   categories.forEach(category => {
     const sheetName = category.replace(/ Label$/, '').substring(0, 31);
     const sheet = workbook.addWorksheet(sheetName);
@@ -6566,6 +6600,7 @@ async function downloadExcel() {
   const timePart = now.toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
     hour12: false
   }).replace(/:/g, '-');
   const filename = `NISRA Custom Area Profile Extract-${datePart} ${timePart}.xlsx`;

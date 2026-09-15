@@ -1563,6 +1563,12 @@ display: block;
   background-color: #f1f1f1;
 }
 
+.dropdown-menu button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .profile-nav-buttons .dropdown-menu {
   padding: 6px;
 }
