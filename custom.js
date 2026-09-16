@@ -6677,10 +6677,18 @@ async function saveBlobWithPicker(blob, suggestedName) {
           }
         ]
       };
+
+      alert('About to open save picker');
+
       const handle = await window.showSaveFilePicker(options);
+
+      alert('Save picker returned handle');
+
+      alert('Creating writable stream');
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
+      alert('File saved successfully');
       return;
     } catch (err) {
       // if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
