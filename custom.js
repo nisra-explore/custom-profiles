@@ -6679,6 +6679,9 @@ async function saveBlobWithPicker(blob, suggestedName) {
       //   console.info('Save file picker canceled by user. No file was downloaded.');
       //   return;
       // }
+      alert(`Picker error: ${err?.name}`);
+      console.log('Picker error:', err);
+
 
       if (err?.name === 'AbortError') {
         console.info('User cancelled save dialog.');
