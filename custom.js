@@ -5725,7 +5725,7 @@ function waitForImagesToLoad(container) {
 }
 
 function downloadSummaryImage(outputFormat = 'png') {
-  alert(`Image function started: ${outputFormat}`);
+  
 
   const selectedTab = document.querySelector('.view-tab.selected');
   const view = selectedTab ? selectedTab.getAttribute('data-view') : 'charts';
@@ -6216,8 +6216,6 @@ function downloadSummaryImage(outputFormat = 'png') {
         }, 'image/png');
       });
 
-      alert('PNG blob created');
-
       await saveBlobWithPicker(blob, filename);
       document.body.removeChild(cloneWrapper);
       return;
@@ -6371,13 +6369,13 @@ function downloadSummaryImage(outputFormat = 'png') {
 }
 
 function downloadSummaryPDF() {
-  alert('PDF clicked');
+  
   downloadSummaryImage('pdf');
 }
 
 
 async function downloadExcel() {
-  alert('Excel clicked');
+  
   const ENABLE_URBAN_RURAL_BREAKDOWN = false; // Set to true to include Urban/Rural breakdown in Excel export
 
   // Grab selected IDs (zones) and trigger a refresh of comparison data
@@ -6661,20 +6659,20 @@ async function downloadExcel() {
 
 async function saveBlobWithPicker(blob, suggestedName) {
 
-  alert('1 - function entered');
+  let hasPicker = false;
 
-  if (window.showSaveFilePicker) {
+  try {
+    hasPicker = typeof window.showSaveFilePicker === 'function';
+  } catch (err) {
+    alert(`Error checking picker: ${err}`);
+  }
 
-    alert('2 - showSaveFilePicker exists');
+  if (hasPicker) {
 
     try {
 
-      alert('3 - entering try block');
-
       const ext = suggestedName.split('.').pop();
-      
-      alert('4 - extension created');
-      
+         
       const options = {
         suggestedName,
         types: [
@@ -6687,34 +6685,36 @@ async function saveBlobWithPicker(blob, suggestedName) {
         ]
       };
 
-      alert('5 - options created');
-      alert('6 - about to call picker');
-
+      
       const handle = await window.showSaveFilePicker(options);
-
-      alert('Save picker returned handle');
-
-      alert('Creating writable stream');
+      
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
-      alert('File saved successfully');
+
+      
+
       return;
     } catch (err) {
       // if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
       //   console.info('Save file picker canceled by user. No file was downloaded.');
       //   return;
       // }
-      alert(`Picker error: ${err?.name}`);
-      console.log('Picker error:', err);
-
-
-      if (err?.name === 'AbortError') {
-        console.info('User cancelled save dialog.');
+      
+      if (
+        err?.name === 'AbortError' ||
+        err?.name === 'NotAllowedError'
+      ) {
+        console.info(
+      `Save dialog closed (${err.name}).`
+        );
         return;
       }
 
-      console.warn('Save file picker failed (${err?.name}), falling back to default download.', err);
+      console.error(
+        `Unexpected save file picker error (${err?.name}).`,
+        err
+      );
     }
   }
 
