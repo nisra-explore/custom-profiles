@@ -6661,11 +6661,20 @@ async function downloadExcel() {
 
 async function saveBlobWithPicker(blob, suggestedName) {
 
-  alert('saveBlobWithPicker entered');
+  alert('1 - function entered');
 
   if (window.showSaveFilePicker) {
+
+    alert('2 - showSaveFilePicker exists');
+
     try {
+
+      alert('3 - entering try block');
+
       const ext = suggestedName.split('.').pop();
+      
+      alert('4 - extension created');
+      
       const options = {
         suggestedName,
         types: [
@@ -6678,7 +6687,8 @@ async function saveBlobWithPicker(blob, suggestedName) {
         ]
       };
 
-      alert('About to open save picker');
+      alert('5 - options created');
+      alert('6 - about to call picker');
 
       const handle = await window.showSaveFilePicker(options);
 
