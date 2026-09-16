@@ -6675,11 +6675,17 @@ async function saveBlobWithPicker(blob, suggestedName) {
       await writable.close();
       return;
     } catch (err) {
-      if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
-        console.info('Save file picker canceled by user. No file was downloaded.');
+      // if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
+      //   console.info('Save file picker canceled by user. No file was downloaded.');
+      //   return;
+      // }
+
+      if (err?.name === 'AbortError') {
+        console.info('User cancelled save dialog.');
         return;
       }
-      console.warn('Save file picker failed, falling back to default download.', err);
+
+      console.warn('Save file picker failed (${err?.name}), falling back to default download.', err);
     }
   }
 
@@ -6688,6 +6694,7 @@ async function saveBlobWithPicker(blob, suggestedName) {
     return;
   }
 
+  
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
