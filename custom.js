@@ -6216,6 +6216,8 @@ function downloadSummaryImage(outputFormat = 'png') {
         }, 'image/png');
       });
 
+      alert('PNG blob created');
+
       await saveBlobWithPicker(blob, filename);
       document.body.removeChild(cloneWrapper);
       return;
@@ -6658,6 +6660,9 @@ async function downloadExcel() {
 }
 
 async function saveBlobWithPicker(blob, suggestedName) {
+
+  alert('saveBlobWithPicker entered');
+
   if (window.showSaveFilePicker) {
     try {
       const ext = suggestedName.split('.').pop();
