@@ -5725,7 +5725,8 @@ function waitForImagesToLoad(container) {
 }
 
 function downloadSummaryImage(outputFormat = 'png') {
-  
+  alert(`Image function started: ${outputFormat}`);
+
   const selectedTab = document.querySelector('.view-tab.selected');
   const view = selectedTab ? selectedTab.getAttribute('data-view') : 'charts';
   const isMobileExport = window.innerWidth <= 768;
@@ -6368,11 +6369,13 @@ function downloadSummaryImage(outputFormat = 'png') {
 }
 
 function downloadSummaryPDF() {
+  alert('PDF clicked');
   downloadSummaryImage('pdf');
 }
 
 
 async function downloadExcel() {
+  alert('Excel clicked');
   const ENABLE_URBAN_RURAL_BREAKDOWN = false; // Set to true to include Urban/Rural breakdown in Excel export
 
   // Grab selected IDs (zones) and trigger a refresh of comparison data
