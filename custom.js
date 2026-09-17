@@ -17,7 +17,7 @@ let xColumnIndexCache = null;
 
 const AREA_LAYER_MAX_ZOOM = 11;
 
-function getResponsiveZoom() {
+function getResponsiveZoom() {  
   // Use innerWidth where available, fall back to document/client and screen width
   const inner = window.innerWidth || document.documentElement.clientWidth || 0;
   const scr = (typeof screen !== 'undefined' && screen.width) ? screen.width : 0;
