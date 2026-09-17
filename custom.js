@@ -5726,6 +5726,7 @@ function waitForImagesToLoad(container) {
 
 function downloadSummaryImage(outputFormat = 'png') {
   
+
   const selectedTab = document.querySelector('.view-tab.selected');
   const view = selectedTab ? selectedTab.getAttribute('data-view') : 'charts';
   const isMobileExport = window.innerWidth <= 768;
@@ -6368,11 +6369,13 @@ function downloadSummaryImage(outputFormat = 'png') {
 }
 
 function downloadSummaryPDF() {
+  
   downloadSummaryImage('pdf');
 }
 
 
 async function downloadExcel() {
+  
   const ENABLE_URBAN_RURAL_BREAKDOWN = false; // Set to true to include Urban/Rural breakdown in Excel export
 
   // Grab selected IDs (zones) and trigger a refresh of comparison data
@@ -6664,9 +6667,21 @@ async function downloadExcel() {
 }
 
 async function saveBlobWithPicker(blob, suggestedName) {
-  if (window.showSaveFilePicker) {
+
+  let hasPicker = false;
+
+  try {
+    hasPicker = typeof window.showSaveFilePicker === 'function';
+  } catch (err) {
+    alert(`Error checking picker: ${err}`);
+  }
+
+  if (hasPicker) {
+
     try {
+
       const ext = suggestedName.split('.').pop();
+         
       const options = {
         suggestedName,
         types: [
@@ -6678,17 +6693,37 @@ async function saveBlobWithPicker(blob, suggestedName) {
           }
         ]
       };
+
+      
       const handle = await window.showSaveFilePicker(options);
+      
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
+
+      
+
       return;
     } catch (err) {
-      if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
-        console.info('Save file picker canceled by user. No file was downloaded.');
+      // if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
+      //   console.info('Save file picker canceled by user. No file was downloaded.');
+      //   return;
+      // }
+      
+      if (
+        err?.name === 'AbortError' ||
+        err?.name === 'NotAllowedError'
+      ) {
+        console.info(
+      `Save dialog closed (${err.name}).`
+        );
         return;
       }
-      console.warn('Save file picker failed, falling back to default download.', err);
+
+      console.error(
+        `Unexpected save file picker error (${err?.name}).`,
+        err
+      );
     }
   }
 
@@ -6697,6 +6732,7 @@ async function saveBlobWithPicker(blob, suggestedName) {
     return;
   }
 
+  
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
