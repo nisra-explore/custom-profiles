@@ -6426,7 +6426,7 @@ async function downloadExcel() {
   // ZONE BREAKDOWN SHEET
     const breakSheet = workbook.addWorksheet('Zone Breakdown');  
       
-    const showAreaTypeColumn =
+    const showAreaTypeColumn = 
     ENABLE_URBAN_RURAL_BREAKDOWN &&
     (zoneType === 'sdz' || zoneType === 'dz');
     breakSheet.columns = showAreaTypeColumn
