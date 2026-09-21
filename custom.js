@@ -6658,7 +6658,7 @@ async function downloadExcel() {
 }
 
 async function saveBlobWithPicker(blob, suggestedName) {
-
+ 
   let hasPicker = false;
 
   try {
@@ -6688,18 +6688,25 @@ async function saveBlobWithPicker(blob, suggestedName) {
       
       const handle = await window.showSaveFilePicker(options);
       
+      
       const writable = await handle.createWritable();
       await writable.write(blob);
-      await writable.close();
-
-      
+      await writable.close();    
 
       return;
+
     } catch (err) {
       // if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
       //   console.info('Save file picker canceled by user. No file was downloaded.');
       //   return;
       // }
+
+      alert(
+        'Picker result: ' +
+        (err?.name || 'unknown') +
+        ' - ' +
+        (err?.message || '')
+      );
       
       if (
         err?.name === 'AbortError' ||
