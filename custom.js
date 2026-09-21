@@ -6660,9 +6660,12 @@ async function downloadExcel() {
 async function saveBlobWithPicker(blob, suggestedName) {
  
   alert(
-    'NEW MOBILE CODE\n' +
+    'MOBILE DOWNLOAD\n' +
     'isMobile = ' +
-    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) +
+    '\nfile = ' + suggestedName +
+    '\ntype = ' + blob.type +
+    '\nsize = ' + blob.size
   );
 
   const isMobile =
