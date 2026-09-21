@@ -17,7 +17,7 @@ let xColumnIndexCache = null;
 
 const AREA_LAYER_MAX_ZOOM = 11;
 
-function getResponsiveZoom() {  
+function getResponsiveZoom() {
   // Use innerWidth where available, fall back to document/client and screen width
   const inner = window.innerWidth || document.documentElement.clientWidth || 0;
   const scr = (typeof screen !== 'undefined' && screen.width) ? screen.width : 0;
@@ -6426,7 +6426,7 @@ async function downloadExcel() {
   // ZONE BREAKDOWN SHEET
     const breakSheet = workbook.addWorksheet('Zone Breakdown');  
       
-    const showAreaTypeColumn = 
+    const showAreaTypeColumn =
     ENABLE_URBAN_RURAL_BREAKDOWN &&
     (zoneType === 'sdz' || zoneType === 'dz');
     breakSheet.columns = showAreaTypeColumn
@@ -6462,15 +6462,6 @@ async function downloadExcel() {
     });
 
     Object.keys(lgdGroups).sort().forEach(lgd => {
-      if (zoneType === 'lgd') {
-        // LGD selections just need the plain list of names, no sub-table header
-        lgdGroups[lgd].forEach(({ zoneName }) => {
-          const row = breakSheet.addRow([zoneName]);
-          row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
-        });
-        return;
-      }
-
       const titleRow = breakSheet.addRow([`${lgd} LGD`]);
       titleRow.font = { bold: true };
       if (showAreaTypeColumn) {
@@ -6673,7 +6664,7 @@ async function saveBlobWithPicker(blob, suggestedName) {
   try {
     hasPicker = typeof window.showSaveFilePicker === 'function';
   } catch (err) {
-    alert(`Error checking picker: ${err}`);
+    console.error('Error checking save file picker:', err);
   }
 
   if (hasPicker) {
@@ -6714,9 +6705,13 @@ async function saveBlobWithPicker(blob, suggestedName) {
         err?.name === 'AbortError' ||
         err?.name === 'NotAllowedError'
       ) {
-        console.info(
-      `Save dialog closed (${err.name}).`
+        console.info(`Save dialog closed (${err.name}).`
         );
+
+        // Give mobile browsers a chance to restore the page
+        // after dismissing the native picker.
+        await new Promise(resolve => setTimeout(resolve, 0));
+
         return;
       }
 
@@ -6727,6 +6722,7 @@ async function saveBlobWithPicker(blob, suggestedName) {
     }
   }
 
+  // Fallback for browsers without showSaveFilePicker().
   if (navigator.msSaveOrOpenBlob) {
     navigator.msSaveOrOpenBlob(blob, suggestedName);
     return;
@@ -6735,11 +6731,14 @@ async function saveBlobWithPicker(blob, suggestedName) {
   
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
+
   link.href = url;
   link.download = suggestedName;
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
@@ -7308,19 +7307,44 @@ function handleImportFile(file) {
 
 
 // Dropdown menu styling
+// const downloadBtn = document.getElementById("downloadDropdown");
+// const menu = document.querySelector(".dropdown-menu");
+
+// downloadBtn.addEventListener("click", function (e) {
+//     e.stopPropagation();
+//     menu.classList.toggle("show");
+// });
+
+// document.addEventListener("click", function () {
+//     menu.classList.remove("show");
+// });
+
 const downloadBtn = document.getElementById("downloadDropdown");
 const menu = document.querySelector(".dropdown-menu");
 
-downloadBtn.addEventListener("click", function (e) {
+downloadBtn?.addEventListener("click", function (e) {
+    e.preventDefault();
     e.stopPropagation();
     menu.classList.toggle("show");
 });
 
-document.addEventListener("click", function () {
-    menu.classList.remove("show");
+// Let clicks/taps on download options finish normally.
+// Do not let them bubble to the document-level close handler.
+menu?.addEventListener("click", function (e) {
+    e.stopPropagation();
 });
 
-
+// Only close the menu when genuinely clicking outside it.
+document.addEventListener("click", function (e) {
+    if (
+        menu &&
+        downloadBtn &&
+        !menu.contains(e.target) &&
+        !downloadBtn.contains(e.target)
+    ) {
+        menu.classList.remove("show");
+    }
+});
 
 
 (() => {
