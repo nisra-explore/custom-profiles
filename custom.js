@@ -6659,20 +6659,24 @@ async function downloadExcel() {
 
 async function saveBlobWithPicker(blob, suggestedName) {
  
+  const isMobile =
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   let hasPicker = false;
 
   try {
-    hasPicker = typeof window.showSaveFilePicker === 'function';
+    hasPicker =
+      !isMobile &&
+      typeof window.showSaveFilePicker === 'function';
   } catch (err) {
     console.error('Error checking save file picker:', err);
   }
 
+  // Desktop: keep the Save File Picker
   if (hasPicker) {
-
     try {
-
       const ext = suggestedName.split('.').pop();
-         
+
       const options = {
         suggestedName,
         types: [
@@ -6685,39 +6689,26 @@ async function saveBlobWithPicker(blob, suggestedName) {
         ]
       };
 
-      
-      const handle = await window.showSaveFilePicker(options);
-      
-      
-      const writable = await handle.createWritable();
+      const handle =
+        await window.showSaveFilePicker(options);
+
+      const writable =
+        await handle.createWritable();
+
       await writable.write(blob);
-      await writable.close();    
+      await writable.close();
 
       return;
 
     } catch (err) {
-      // if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
-      //   console.info('Save file picker canceled by user. No file was downloaded.');
-      //   return;
-      // }
 
-      alert(
-        'Picker result: ' +
-        (err?.name || 'unknown') +
-        ' - ' +
-        (err?.message || '')
-      );
-      
       if (
         err?.name === 'AbortError' ||
         err?.name === 'NotAllowedError'
       ) {
-        console.info(`Save dialog closed (${err.name}).`
+        console.info(
+          `Save dialog closed (${err.name}).`
         );
-
-        // Give mobile browsers a chance to restore the page
-        // after dismissing the native picker.
-        await new Promise(resolve => setTimeout(resolve, 0));
 
         return;
       }
@@ -6729,13 +6720,13 @@ async function saveBlobWithPicker(blob, suggestedName) {
     }
   }
 
-  // Fallback for browsers without showSaveFilePicker().
+  // Mobile, or browsers without showSaveFilePicker:
+  // use the browser's normal download mechanism.
   if (navigator.msSaveOrOpenBlob) {
     navigator.msSaveOrOpenBlob(blob, suggestedName);
     return;
   }
 
-  
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
 
@@ -6743,10 +6734,14 @@ async function saveBlobWithPicker(blob, suggestedName) {
   link.download = suggestedName;
 
   document.body.appendChild(link);
+
   link.click();
+
   document.body.removeChild(link);
 
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 function markEmptyCategoryGroups() {
