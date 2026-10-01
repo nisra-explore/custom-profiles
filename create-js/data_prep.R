@@ -75,8 +75,12 @@ list_of_sdz_urls <- paste0("https://build.nisra.gov.uk/en/custom/table.csv?d=PEO
 list_of_dea_urls <- paste0("https://build.nisra.gov.uk/en/custom/table.csv?d=PEOPLE&v=DEA14&v=",
                            table_list)
 
+# Local Government District
+list_of_lgd_urls <- paste0("https://build.nisra.gov.uk/en/custom/table.csv?d=PEOPLE&v=LGD14&v=",
+                           table_list)
+
 # Combined list
-list_of_urls <- c(list_of_sdz_urls, list_of_dz_urls, list_of_dea_urls)
+list_of_urls <- c(list_of_sdz_urls, list_of_dz_urls, list_of_dea_urls, list_of_lgd_urls)
 
 # NI Total
 list_of_totals <- paste0("https://build.nisra.gov.uk/en/custom/table.csv?d=PEOPLE&v=",
@@ -114,18 +118,22 @@ Sys.getenv("https_proxy")
 Sys.setenv("http_proxy" = "")
 Sys.setenv("https_proxy" = "")
 
-data_portal_codes <- c("BSDZ", "BSSDZ", "BSDEA", "PRCDEA", "PRCLGD", "BUSINESSBIGLGD", "EJOBSLGD",
+data_portal_codes <- c("PRCDEA", "PRCLGD", "BUSINESSBIGLGD", "EJOBSLGD",
                        "DESCSLGD", "DESCPDEA", "DESCPPLGD", "DESCPPDEA", "DESCSLGD", "DESCSDEA"
                        # "MYE01T010"
                        )
 
-column_name <- c("Benefits Statistics", "Benefits Statistics", "Benefits Statistics", "Crime classification",
+#"BSDZ", "BSSDZ", "BSDEA", (MG - benefits data removed)
+
+column_name <- c( "Crime classification",
                  "Crime classification", "Number of businesses", "Employee Jobs")
   
+# "Benefits Statistics", "Benefits Statistics", "Benefits Statistics", (MG - benefits data removed)
+
 url_list <- c(
-  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BSDZ/CSV/1.0/",
-  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BSSDZ/CSV/1.0/",
-  "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BSDEA/CSV/1.0/",
+  # "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BSDZ/CSV/1.0/", (MG - benefits data removed)
+  # "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BSSDZ/CSV/1.0/",
+  # "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BSDEA/CSV/1.0/",
   "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/PRCDEA/CSV/1.0/en",
   "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/PRCLGD/CSV/1.0/en",
   "https://ws-data.nisra.gov.uk/public/api.restful/PxStat.Data.Cube_API.ReadDataset/BUSINESSBIGLGD/CSV/1.0/en",
@@ -480,11 +488,42 @@ for (i in seq_len(nrow(urban_rural_df2))) {
 # Define the URL and temporary file path
 #lgd_sdz_df <-read.csv("T:/General TL/Resources/cpdjul2024/CPDJul2024csv/CPDJul2024csv/CPD_LIGHT.csv", header = TRUE, sep = ",")
 
-# update link to point to data_source_root (MG)
-lgd_sdz_df <- read.csv(
-  file.path(data_source_root, "CPD_LIGHT.csv"),
-  header = TRUE,
-  sep = ","
+# Try CPD_LIGHT.csv from the repo first, then fall back to local copy (MG)
+
+repo_csv <- "https://raw.githubusercontent.com/nisra-explore/postcode-search/main/CPD_LIGHT.csv"
+local_csv <- file.path(data_source_root, "CPD_LIGHT.csv")
+
+lgd_sdz_df <- tryCatch(
+  {
+    message("Attempting to read CPD_LIGHT.csv from repo...")
+    
+    h <- curl::new_handle(
+      timeout = 30,
+      ssl_verifypeer = FALSE
+    )
+    
+    con <- curl::curl(repo_csv, handle = h)
+    # on.exit(close(con), add = TRUE)
+    
+    df <- read.csv(
+      con,
+      header = TRUE,
+      sep = ","
+    )
+    
+    message("Successfully read CPD_LIGHT.csv from repo.")
+    df
+  },
+  error = function(e) {
+    message("Repo copy unavailable: ", conditionMessage(e))
+    message("Using local CPD_LIGHT.csv...")
+    
+    read.csv(
+      local_csv,
+      header = TRUE,
+      sep = ","
+    )
+  }
 )
 
 lgd_sdz_df_clean <- lgd_sdz_df %>%

@@ -6462,6 +6462,15 @@ async function downloadExcel() {
     });
 
     Object.keys(lgdGroups).sort().forEach(lgd => {
+      if (zoneType === 'lgd') {
+        // LGD selections just need the plain list of names, no sub-table header
+        lgdGroups[lgd].forEach(({ zoneName }) => {
+          const row = breakSheet.addRow([zoneName]);
+          row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+        });
+        return;
+      }
+
       const titleRow = breakSheet.addRow([`${lgd} LGD`]);
       titleRow.font = { bold: true };
       if (showAreaTypeColumn) {
@@ -6675,6 +6684,7 @@ async function saveBlobWithPicker(blob, suggestedName) {
   // Desktop: keep the Save File Picker
   if (hasPicker) {
     try {
+
       const ext = suggestedName.split('.').pop();
 
       const options = {
@@ -6727,6 +6737,7 @@ async function saveBlobWithPicker(blob, suggestedName) {
     return;
   }
 
+  
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
 
